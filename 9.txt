@@ -1,0 +1,54 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def lwlr(test_point, X, Y, tau):
+    m = len(X)
+    weights = np.zeros(m)
+    
+    # Calculate weights
+    for i in range(m):
+        diff = test_point - X[i]
+        weights[i] = np.exp(-(diff ** 2) / (2 * tau ** 2))
+    
+    # Create weighted matrices
+    W = np.diag(weights)
+    X_matrix = np.column_stack([np.ones(m), X])
+    
+    # Solve weighted least squares
+    XTW = X_matrix.T @ W
+    theta = np.linalg.inv(XTW @ X_matrix) @ XTW @ Y
+    
+    # Predict
+    test_matrix = np.array([1, test_point])
+    return test_matrix @ theta
+
+# Generate sample data
+np.random.seed(42)
+X = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+Y = np.array([0.2, 0.5, 0.6, 0.8, 1.1, 1.3, 1.6, 1.8, 2.1])
+
+print("Locally Weighted Regression Results:")
+print("X\tActual\tPredicted")
+
+# Test on training data
+tau = 0.1
+predictions = []
+for i in range(len(X)):
+    pred = lwlr(X[i], X, Y, tau)
+    predictions.append(pred)
+    print(f"{X[i]:.1f}\t{Y[i]:.1f}\t{pred:.3f}")
+
+# Calculate MSE
+mse = np.mean((Y - np.array(predictions)) ** 2)
+print(f"\nMean Squared Error: {mse:.4f}")
+
+# Plot
+plt.figure(figsize=(8, 6))
+plt.scatter(X, Y, color='blue', label='Actual', s=50)
+plt.plot(X, predictions, 'ro-', label='LWR Prediction')
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.title('Locally Weighted Regression')
+plt.legend()
+plt.grid(True)
+plt.show()
