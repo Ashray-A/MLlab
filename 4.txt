@@ -8,7 +8,7 @@ y = data["Label"]
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
 
-model = MLPClassifier(hidden_layer_sizes=(4,), max_iter=1000)
+model = MLPClassifier(hidden_layer_sizes=(4,), max_iter=10000)
 model.fit(X_train, y_train)
 pred = model.predict(X_test)
 
@@ -16,10 +16,17 @@ print("Predictions:", pred)
 print("Actual     :", y_test.values)
 
 
-
-csv
+DATA
 Feature1,Feature2,Label
-0,0,0
-0,1,1
-1,0,1
-1,1,0
+2.7810836,2.550537003,0
+1.465489372,2.362125076,0
+3.396561688,4.400293529,0
+1.38807019,1.850220317,0
+3.06407232,3.005305973,0
+7.627531214,2.759262235,1
+5.332441248,2.088626775,1
+6.922596716,1.77106367,1
+8.675418651,-0.242068655,1
+7.673756466,3.508563011,1
+
+
