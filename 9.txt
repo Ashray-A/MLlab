@@ -1,54 +1,77 @@
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def lwlr(test_point, X, Y, tau):
-    m = len(X)
-    weights = np.zeros(m)
-    
-    # Calculate weights
-    for i in range(m):
-        diff = test_point - X[i]
-        weights[i] = np.exp(-(diff ** 2) / (2 * tau ** 2))
-    
-    # Create weighted matrices
-    W = np.diag(weights)
-    X_matrix = np.column_stack([np.ones(m), X])
-    
-    # Solve weighted least squares
-    XTW = X_matrix.T @ W
-    theta = np.linalg.inv(XTW @ X_matrix) @ XTW @ Y
-    
-    # Predict
-    test_matrix = np.array([1, test_point])
-    return test_matrix @ theta
+def kernel(x0,X,tau):
+  return np.diag(np.exp(-np.sum((X-x0)**2,axis=1)/(2*tau**2)))
 
-# Generate sample data
-np.random.seed(42)
-X = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
-Y = np.array([0.2, 0.5, 0.6, 0.8, 1.1, 1.3, 1.6, 1.8, 2.1])
+def predict(X,y,tau):
+  return np.array([(x @ np.linalg.pinv(X.T @ kernel(x,X,tau) @ X) @ X.T @ kernel(x,X,tau) @ y) for x in X])
 
-print("Locally Weighted Regression Results:")
-print("X\tActual\tPredicted")
-
-# Test on training data
-tau = 0.1
-predictions = []
-for i in range(len(X)):
-    pred = lwlr(X[i], X, Y, tau)
-    predictions.append(pred)
-    print(f"{X[i]:.1f}\t{Y[i]:.1f}\t{pred:.3f}")
-
-# Calculate MSE
-mse = np.mean((Y - np.array(predictions)) ** 2)
-print(f"\nMean Squared Error: {mse:.4f}")
-
-# Plot
-plt.figure(figsize=(8, 6))
-plt.scatter(X, Y, color='blue', label='Actual', s=50)
-plt.plot(X, predictions, 'ro-', label='LWR Prediction')
-plt.xlabel('X')
-plt.ylabel('Y')
-plt.title('Locally Weighted Regression')
-plt.legend()
-plt.grid(True)
+data=pd.read_csv('LR.csv')
+X=np.hstack((np.ones((len(data),1)),data[['colA']].values))
+y=data['colB'].values
+idx=X[:,1].argsort()
+ypred=predict(X,y,tau=0.5)
+plt.scatter(X[:,1],y,color='green')
+plt.plot(X[idx,1],ypred[idx],color='red',linewidth=2)
+plt.xlabel('colA')
+plt.ylabel('colB')
+plt.title('LWR regression')
 plt.show()
+
+
+
+
+csv
+colA,colB
+1.0,5.528104691935328
+1.183673469387755,3.167661355509957
+1.3673469387755102,4.692169845762499
+1.5510204081632653,7.583827214729446
+1.7346938775510203,7.204503735401976
+1.9183673469387754,1.8821789341247288
+2.1020408163265305,6.1042584677042395
+2.2857142857142856,4.268714154833176
+2.4693877551020407,4.7323378066169655
+2.6530612244897958,6.127319452856336
+2.836734693877551,5.961556530076858
+3.0204081632653064,8.949363340456562
+3.2040816326530615,7.93023871560011
+3.3877551020408165,7.01886023706729
+3.5714285714285716,8.030583608347994
+3.7551020408163267,8.177552736381188
+3.938775510204082,10.865709166723375
+4.122448979591837,7.834581431652073
+4.3061224489795915,9.238380301260985
+4.4897959183673475,7.271400358131245
+4.673469387755102,4.240959143842046
+4.857142857142858,11.021522905166437
+5.040816326530613,11.810505050780236
+5.224489795918368,8.964649551023852
+5.408163265306123,15.355835778587462
+5.591836734693878,8.274942120190227
+5.775510204081633,11.642537442766159
+5.959183673469388,11.543999646887109
+6.142857142857143,15.351272714431202
+6.326530612244898,15.591778764290368
+6.510204081632653,13.330303014659139
+6.6938775510204085,14.144080141245164
+6.877551020408164,11.979530545556102
+7.061224489795919,10.160856043143983
+7.244897959183674,13.793971619715043
+7.428571428571429,15.169840795350817
+7.612244897959184,17.68507115737381
+7.795918367346939,17.9965964322627
+7.979591836734694,15.184530038653484
+8.16326530612245,15.721925111094228
+8.346938775510203,14.596771620886221
+8.53061224489796,14.221188615437969
+8.714285714285715,14.016031047321405
+8.89795918367347,21.697469157810517
+9.081632653061225,17.143960942619145
+9.26530612244898,17.654463641675587
+9.448979591836736,16.392368463573618
+9.63265306122449,20.8202868341128
+9.816326530612246,16.404857366108587
+10.0,19.57451943957206
