@@ -1,0 +1,51 @@
+import bayespy as bp
+import numpy as np
+import csv
+
+enums = [
+    {'SuperSeniorCitizen':0, 'SeniorCitizen':1, 'MiddleAged':2, 'Youth':3, 'Teen':4},
+    {'Yes':0, 'No':1},
+    {'High':0, 'BorderLine':1, 'Normal':2},
+    {'Yes':0, 'No':1}
+]
+
+with open('heart_disease_data.csv') as f:
+    reader = csv.reader(f)
+    next(reader)
+    data = np.array([[enums[i][v] for i, v in enumerate(row)] for row in csv.reader(f)])
+N = len(data)
+
+nodes = []
+for i, sizes in enumerate([5,2,3]):
+    p = bp.nodes.Dirichlet(np.ones(sizes))
+    n = bp.nodes.Categorical(p, plates=(N,))
+    n.observe(data[:, i])
+    nodes.append(n)
+
+alpha = 2
+p_hd = bp.nodes.Dirichlet(alpha * np.ones(2), plates=(5,2,3))
+hd = bp.nodes.MultiMixture(nodes, bp.nodes.Categorical, p_hd)
+hd.observe(data[:, 3])
+p_hd.update()
+
+while True:
+    inp = [int(input(f"Enter {list(e.keys())}: ")) for e in enums[:-1]]
+    prob = bp.nodes.MultiMixture(inp, bp.nodes.Categorical, p_hd).get_moments()[0][0]
+    print(f"Probability of Heart Disease: {prob:.4f}")
+    if input("Try again? (y/n): ").lower() != 'y': break
+
+
+
+
+csv
+Age,Smoking,Cholesterol,HeartDisease
+SuperSeniorCitizen,Yes,High,Yes
+Teen,No,Normal,No
+SeniorCitizen,Yes,Normal,Yes
+Youth,Yes,BorderLine,Yes
+MiddleAged,No,Normal,No
+MiddleAged,Yes,High,Yes
+Youth,No,High,No
+SeniorCitizen,No,BorderLine,No
+SuperSeniorCitizen,Yes,Normal,Yes
+Teen,Yes,High,No
