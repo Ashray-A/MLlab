@@ -1,4 +1,4 @@
-rom sklearn.datasets import load_iris
+from sklearn.datasets import load_iris
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 import pandas as pd
@@ -21,3 +21,4 @@ misclassified=np.where(pred!=y_test)[0]
 print("the length of the misclassified: ",len(misclassified))
 for i in misclassified:
   print(f"Index {i}, Actual {y_test[i]} Predicted {pred[i]}")
+
