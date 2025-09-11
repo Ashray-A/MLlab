@@ -1,0 +1,340 @@
+import pandas as pd
+
+data = pd.read_csv("finds_data.csv")
+concepts = data.iloc[:, :-1].values
+target = data.iloc[:, -1].values
+
+hypothesis = ['0'] * len(concepts[0])
+for i, val in enumerate(target):
+    if val == "Yes":
+        hypothesis = concepts[i].copy()
+        break
+
+for i, val in enumerate(concepts):
+    if target[i] == "Yes":
+        for j in range(len(hypothesis)):
+            if hypothesis[j] != val[j]:
+                hypothesis[j] = '?'
+
+print("Final Hypothesis:", hypothesis)
+
+
+
+csv
+Sky,AirTemp,Humidity,Wind,Water,Forecast,EnjoySport
+Sunny,Warm,Normal,Strong,Warm,Same,Yes
+Sunny,Warm,High,Strong,Warm,Same,Yes
+Rainy,Cold,High,Strong,Warm,Change,No
+Sunny,Warm,High,Strong,Cool,Same,Yes
+Sunny,Warm,Normal,Strong,Warm,Same,Yes
+
+
+
+import pandas as pd
+
+data = pd.read_csv("finds_data.csv")
+concepts = data.iloc[:, :-1].values
+target = data.iloc[:, -1].values
+
+def consistent(h, x):
+    return all(h[i] == x[i] or h[i] == '?' for i in range(len(h)))
+
+s = list(concepts[0]) if target[0] == 'Yes' else ['?' for _ in range(len(concepts[0]))]
+g = [['?' for _ in range(len(s))]]
+
+for i in range(len(concepts)):
+    if target[i] == 'Yes':
+        for j in range(len(s)):
+            if s[j] != concepts[i][j]:
+                s[j] = '?'
+    else:
+        new_g = []
+        for h in g:
+            for j in range(len(h)):
+                if h[j] == '?':
+                    for val in set(data.iloc[:, j]):
+                        if val != s[j]:
+                            h1 = h.copy()
+                            h1[j] = val
+                            if consistent(h1, concepts[i]) == False:
+                                new_g.append(h1)
+        g = new_g or g
+
+print("S:", s)
+print("G:", g)
+
+
+
+csv
+Sky,AirTemp,Humidity,Wind,Water,Forecast,EnjoySport
+Sunny,Warm,Normal,Strong,Warm,Same,Yes
+Sunny,Warm,High,Strong,Warm,Same,Yes
+Rainy,Cold,High,Strong,Warm,Change,No
+Sunny,Warm,High,Strong,Cool,Same,Yes
+Sunny,Warm,Normal,Strong,Warm,Same,Yes
+
+
+import pandas as pd
+from sklearn import preprocessing
+from sklearn.tree import DecisionTreeClassifier, export_text
+
+data = pd.read_csv("decision_tree_data.csv")
+print("Dataset:")
+print(data)
+print("\nDecision Tree:")
+
+X = data.iloc[:, :-1]
+y = data.iloc[:, -1]
+
+le = preprocessing.LabelEncoder()
+X_enc = X.apply(lambda x: preprocessing.LabelEncoder().fit_transform(x))
+y_enc = le.fit_transform(y)
+
+model = DecisionTreeClassifier(criterion="entropy", min_samples_leaf=1)
+model.fit(X_enc, y_enc)
+
+tree_rules = export_text(model, feature_names=list(X.columns))
+print(tree_rules)
+
+
+
+csv
+Outlook,Temperature,Humidity,Wind,PlayTennis
+Sunny,Hot,High,Weak,No
+Sunny,Hot,High,Strong,No
+Overcast,Hot,High,Weak,Yes
+Rain,Mild,High,Weak,Yes
+Rain,Cool,Normal,Weak,Yes
+Rain,Cool,Normal,Strong,No
+Overcast,Cool,Normal,Strong,Yes
+Sunny,Mild,High,Weak,No
+Sunny,Cool,Normal,Weak,Yes
+Rain,Mild,Normal,Weak,Yes
+Sunny,Mild,Normal,Strong,Yes
+Overcast,Mild,High,Strong,Yes
+Overcast,Hot,Normal,Weak,Yes
+Rain,Mild,High,Strong,No
+
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+
+data = pd.read_csv("ann_data.csv")
+X = data[["Feature1", "Feature2"]]
+y = data["Label"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
+
+model = MLPClassifier(hidden_layer_sizes=(4,), max_iter=10000)
+model.fit(X_train, y_train)
+pred = model.predict(X_test)
+
+print("Predictions:", pred)
+print("Actual     :", y_test.values)
+
+
+DATA
+Feature1,Feature2,Label
+2.7810836,2.550537003,0
+1.465489372,2.362125076,0
+3.396561688,4.400293529,0
+1.38807019,1.850220317,0
+3.06407232,3.005305973,0
+7.627531214,2.759262235,1
+5.332441248,2.088626775,1
+6.922596716,1.77106367,1
+8.675418651,-0.242068655,1
+7.673756466,3.508563011,1
+
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import CategoricalNB
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+
+data = pd.read_csv("naive_bayes_data.csv")
+X = pd.get_dummies(data.drop("PlayTennis", axis=1))
+y = data["PlayTennis"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+model = CategoricalNB()
+model.fit(X_train, y_train)
+pred = model.predict(X_test)
+
+print("Predictions:", pred)
+print("Accuracy:", accuracy_score(y_test, pred))
+print("Precision:", precision_score(y_test, pred, pos_label='Yes',zero_division=0))
+print("Recall:", recall_score(y_test, pred, pos_label='Yes',zero_division=0))
+
+
+
+csv
+Outlook,Temperature,Humidity,Wind,PlayTennis
+Sunny,Hot,High,Weak,No
+Overcast,Hot,High,Strong,Yes
+Rain,Mild,High,Weak,Yes
+Sunny,Cool,Normal,Weak,Yes
+Sunny,Cool,Normal,Strong,No
+Overcast,Mild,High,Strong,Yes
+Rain,Cool,Normal,Strong,No
+Rain,Hot,Normal,Weak,Yes
+
+
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+model = DiscreteBayesianNetwork([("Exercise", "HeartDisease"), ("Diet", "HeartDisease")])
+
+cpd_exercise = TabularCPD("Exercise", 2, [[0.6], [0.4]])
+cpd_diet = TabularCPD("Diet", 2, [[0.7], [0.3]])
+cpd_hd = TabularCPD("HeartDisease", 2,
+                    [[0.9, 0.6, 0.7, 0.1],
+                     [0.1, 0.4, 0.3, 0.9]],
+                    evidence=["Exercise", "Diet"],
+                    evidence_card=[2, 2])
+
+model.add_cpds(cpd_exercise, cpd_diet, cpd_hd)
+
+infer = VariableElimination(model)
+res = infer.query(variables=["HeartDisease"], evidence={"Exercise": 1, "Diet": 1})
+print(res)
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+
+data=pd.read_csv('customers.csv')
+X=data[['Age','AnnualIncome','SpendingScore']]
+kmeans=KMeans(n_clusters=3,random_state=42)
+kmeans.fit(X)
+data['cluster']=kmeans.labels_
+print(data)
+plt.scatter(X['AnnualIncome'],X['SpendingScore'],c=data['cluster'],cmap='viridis')
+plt.xlabel('Annual Income')
+plt.ylabel('Spending Score')
+plt.title('KMeans Cluster')
+plt.show()
+
+
+
+csv
+CustomerID,Age,AnnualIncome,SpendingScore,cluster
+1,19,15,39,2
+2,21,15,81,0
+3,20,16,6,1
+4,23,16,77,0
+5,31,17,40,2
+6,22,17,76,0
+7,35,18,6,1
+8,23,18,94,0
+9,64,19,3,1
+10,30,19,72,0
+
+
+from sklearn.datasets import load_iris
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+iris=load_iris()
+print("The data: ",iris.data)
+print("The target: ",iris.target)
+print("The target names: ",iris.target_names)
+print("The feature names: ",iris.feature_names)
+
+clf=KNeighborsClassifier()
+X_train,X_test,y_train,y_test=train_test_split(iris.data,iris.target,test_size=0.25)
+clf.fit(X_train,y_train)
+pred=clf.predict(X_test)
+print("the accuracy: ",clf.score(X_test,y_test))
+print("the predicted samples: ",pred)
+print("the actual samples", y_test)
+misclassified=np.where(pred!=y_test)[0]
+print("the length of the misclassified: ",len(misclassified))
+for i in misclassified:
+  print(f"Index {i}, Actual {y_test[i]} Predicted {pred[i]}")
+
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+def kernel(x0,X,tau):
+  return np.diag(np.exp(-np.sum((X-x0)**2,axis=1)/(2*tau**2)))
+
+def predict(X,y,tau):
+  return np.array([(x @ np.linalg.pinv(X.T @ kernel(x,X,tau) @ X) @ X.T @ kernel(x,X,tau) @ y) for x in X])
+
+data=pd.read_csv('LR.csv')
+X=np.hstack((np.ones((len(data),1)),data[['colA']].values))
+y=data['colB'].values
+idx=X[:,1].argsort()
+ypred=predict(X,y,tau=0.5)
+plt.scatter(X[:,1],y,color='green')
+plt.plot(X[idx,1],ypred[idx],color='red',linewidth=2)
+plt.xlabel('colA')
+plt.ylabel('colB')
+plt.title('LWR regression')
+plt.show()
+
+
+
+
+csv
+colA,colB
+1.0,5.528104691935328
+1.183673469387755,3.167661355509957
+1.3673469387755102,4.692169845762499
+1.5510204081632653,7.583827214729446
+1.7346938775510203,7.204503735401976
+1.9183673469387754,1.8821789341247288
+2.1020408163265305,6.1042584677042395
+2.2857142857142856,4.268714154833176
+2.4693877551020407,4.7323378066169655
+2.6530612244897958,6.127319452856336
+2.836734693877551,5.961556530076858
+3.0204081632653064,8.949363340456562
+3.2040816326530615,7.93023871560011
+3.3877551020408165,7.01886023706729
+3.5714285714285716,8.030583608347994
+3.7551020408163267,8.177552736381188
+3.938775510204082,10.865709166723375
+4.122448979591837,7.834581431652073
+4.3061224489795915,9.238380301260985
+4.4897959183673475,7.271400358131245
+4.673469387755102,4.240959143842046
+4.857142857142858,11.021522905166437
+5.040816326530613,11.810505050780236
+5.224489795918368,8.964649551023852
+5.408163265306123,15.355835778587462
+5.591836734693878,8.274942120190227
+5.775510204081633,11.642537442766159
+5.959183673469388,11.543999646887109
+6.142857142857143,15.351272714431202
+6.326530612244898,15.591778764290368
+6.510204081632653,13.330303014659139
+6.6938775510204085,14.144080141245164
+6.877551020408164,11.979530545556102
+7.061224489795919,10.160856043143983
+7.244897959183674,13.793971619715043
+7.428571428571429,15.169840795350817
+7.612244897959184,17.68507115737381
+7.795918367346939,17.9965964322627
+7.979591836734694,15.184530038653484
+8.16326530612245,15.721925111094228
+8.346938775510203,14.596771620886221
+8.53061224489796,14.221188615437969
+8.714285714285715,14.016031047321405
+8.89795918367347,21.697469157810517
+9.081632653061225,17.143960942619145
+9.26530612244898,17.654463641675587
+9.448979591836736,16.392368463573618
+9.63265306122449,20.8202868341128
+9.816326530612246,16.404857366108587
+10.0,19.57451943957206
